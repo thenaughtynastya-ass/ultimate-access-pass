@@ -1,1 +1,590 @@
-# ultimate-access-pass
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Ultimate Access Pass</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'platform-dark': '#000000',
+                        'platform-red': '#E50000',
+                        'platform-cta': '#FF4500',
+                        'platform-text': '#FFFFFF',
+                        'platform-secondary': '#CCCCCC',
+                    },
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'] 
+                    },
+                    keyframes: {
+                        pulse_glow: {
+                            '0%, 100%': {'box-shadow': '0 0 10px rgba(255,69,0,0.6)'},
+                            '50%': {'box-shadow': '0 0 30px rgba(255,69,0,1)'}
+                        },
+                        flash: {
+                            '0%, 100%': {'opacity': '0.9'}, 
+                            '50%': {'opacity': '1'}
+                        },
+                        fadeIn: {
+                            '0%': {'opacity': '0', 'transform': 'translateY(20px)'},
+                            '100%': {'opacity': '1', 'transform': 'translateY(0)'}
+                        },
+                        float: {
+                            '0%, 100%': {'transform': 'translateY(0px)'},
+                            '50%': {'transform': 'translateY(-10px)'}
+                        }
+                    },
+                    animation: {
+                        pulse_glow: 'pulse_glow 1.5s infinite ease-in-out',
+                        flash: 'flash 1s infinite alternate',
+                        fadeIn: 'fadeIn 0.6s ease-out',
+                        float: 'float 3s ease-in-out infinite'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #000000;
+            scroll-behavior: smooth;
+        }
+        body.modal-open { 
+            overflow: hidden; 
+        }
+        .content-card { 
+            border: 2px solid #E50000; 
+            transition: all 0.3s ease;
+            animation: fadeIn 0.8s ease-out;
+        }
+        .content-card:hover { 
+            transform: scale(1.03); 
+            background-color: #1a1a1a; 
+            box-shadow: 0 0 20px rgba(229,0,0,0.7);
+        }
+        .modal-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.95);
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 1000; 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: opacity 0.3s ease-in-out; 
+            overflow-y: auto;
+        }
+        .modal-overlay.open {
+            opacity: 1; 
+            pointer-events: auto;
+        }
+        .modal-content {
+            background-color: #1a1a1a; 
+            border: 4px solid #E50000; 
+            max-width: 90%; 
+            width: 450px; 
+            max-height: 90vh;
+            padding: 2rem; 
+            border-radius: 1rem; 
+            box-shadow: 0 0 50px rgba(229,0,0,0.8); 
+            transform: translateY(-50px); 
+            transition: transform 0.3s ease-in-out; 
+            margin: 20px 0; 
+            overflow-y: auto;
+        }
+        .modal-overlay.open .modal-content { 
+            transform: translateY(0); 
+        }
+        .qr-code {
+            width: 256px; 
+            height: 256px; 
+            border: 4px solid #E50000; 
+            border-radius: 12px; 
+            background: white; 
+            padding: 10px;
+        }
+        iframe { 
+            border-radius: 10px; 
+        }
+        .content-image {
+            height: 250px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        .content-image:hover {
+            transform: scale(1.02);
+        }
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        .quick-action-btn {
+            transition: all 0.3s ease;
+        }
+        .quick-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(229, 0, 0, 0.4);
+        }
+        .countdown-timer {
+            background: linear-gradient(45deg, #E50000, #FF4500);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .floating-cta {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 99;
+            animation: float 3s ease-in-out infinite;
+        }
+        .review-card {
+            background: linear-gradient(145deg, #1a1a1a, #000000);
+            border: 1px solid #E50000;
+            transition: all 0.3s ease;
+        }
+        .review-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(229, 0, 0, 0.3);
+        }
+        .star-rating {
+            color: #FFD700;
+        }
+    </style>
+</head>
+<body class="bg-platform-dark text-platform-text font-sans overflow-x-hidden">
+
+    <!-- Sticky Header -->
+    <header class="sticky-header bg-platform-dark/95 border-b-4 border-platform-red py-4 px-8">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="text-3xl md:text-4xl font-black text-platform-text">
+                THE <span class="text-platform-cta">ULTIMATE</span> ACCESS
+            </div>
+            <button onclick="handlePayment()" class="bg-platform-cta text-platform-text px-6 py-3 font-bold uppercase rounded-lg transition-all hover:bg-platform-red hover:scale-105 quick-action-btn">
+                JOIN NOW
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <div class="flex flex-col items-center justify-center pt-20 pb-16 px-4 md:px-8 text-center bg-platform-dark">
+        <div class="max-w-5xl mx-auto">
+            <!-- Limited Time Offer -->
+            <div class="countdown-timer inline-block mb-6 animate-pulse">
+                ⚡ LIMITED TIME OFFER - JOIN TODAY!
+            </div>
+            
+            <p class="text-2xl font-bold tracking-widest uppercase mb-4 text-platform-red animate-flash">WARNING: Uncensored and Unfiltered</p>
+            
+            <h1 class="text-5xl sm:text-7xl lg:text-8xl font-black leading-none mb-8 uppercase animate-fadeIn">
+                GET INSIDE <span class="text-platform-cta">THE REAL</span> SHOW
+            </h1>
+            
+            <p class="text-xl md:text-3xl mb-12 font-bold text-platform-secondary italic">
+                The content they begged me not to release. Only accessible here, behind the paywall.
+            </p>
+            
+            <!-- Primary CTA Button -->
+            <button onclick="handlePayment()" class="inline-block w-full sm:w-2/3 lg:w-1/2 px-10 py-6 text-2xl sm:text-3xl font-black uppercase rounded-lg bg-platform-cta text-platform-text shadow-2xl transition-all duration-300 transform hover:scale-[1.02] hover:bg-platform-red hover:shadow-[0_0_50px_rgba(255,69,0,0.9)] focus:outline-none focus:ring-4 focus:ring-platform-cta focus:ring-opacity-80 animate-pulse_glow">
+                JOIN NOW & START STREAMING!
+            </button>
+            
+            <div class="mt-8 flex justify-center items-center gap-8 text-platform-secondary">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-platform-cta">1,000+</div>
+                    <div class="text-sm">Happy Members</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-platform-cta">24/7</div>
+                    <div class="text-sm">Access</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-platform-cta">4.9/5</div>
+                    <div class="text-sm">Rating</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Preview Section -->
+    <section class="py-16 px-4 md:px-8 bg-platform-dark">
+        <div class="max-w-7xl mx-auto text-center">
+            <h2 class="text-4xl md:text-5xl font-extrabold mb-12 text-platform-red uppercase">EXCLUSIVE CONTENT AWAITING YOU</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Card 1 -->
+                <div class="p-6 bg-platform-dark rounded-md content-card">
+                    <img src="https://i.postimg.cc/MKd5q35Z/IMG-20250927-WA0552.webp" alt="Raw, high definition exclusive content" class="w-full content-image mb-4 rounded-lg border-2 border-platform-red" loading="lazy" onerror="this.src='https://placehold.co/400x250/1a1a1a/E50000?text=EXCLUSIVE+HD+CONTENT'">
+                    <h3 class="text-xl font-bold mb-3 text-platform-cta uppercase">RAW, HD EXCLUSIVES</h3>
+                    <p class="text-platform-secondary">Full-length scenes delivered weekly in crystal-clear quality. No cuts, no limits.</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="p-6 bg-platform-dark rounded-md content-card">
+                    <img src="https://i.postimg.cc/52QCTskq/IMG-20250927-WA0553.webp" alt="Late night live shows" class="w-full content-image mb-4 rounded-lg border-2 border-platform-red" loading="lazy" onerror="this.src='https://placehold.co/400x250/1a1a1a/FF4500?text=LIVE+SHOWS'">
+                    <h3 class="text-xl font-bold mb-3 text-platform-cta uppercase">LATE NIGHT LIVE SHOWS</h3>
+                    <p class="text-platform-secondary">Unscheduled streams with direct, unfiltered audience interaction. Never miss a moment.</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="p-6 bg-platform-dark rounded-md content-card">
+                    <div style="padding:75% 0 0 0;position:relative;">
+                        <iframe src="https://player.vimeo.com/video/1122682359?badge=0&autopause=0&player_id=0&app_id=58479" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" style="position:absolute;top:0;left:0;width:100%;height:100%;" title="Exclusive Video"></iframe>
+                    </div>
+                    <script src="https://player.vimeo.com/api/player.js"></script>
+                    <h3 class="text-xl font-bold mb-3 text-platform-cta uppercase">PRIVATE VIDEO EXCLUSIVE</h3>
+                    <p class="text-platform-secondary">Watch the uncensored behind-the-scenes action anytime, anywhere.</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="p-6 bg-platform-dark rounded-md content-card">
+                    <img src='https://i.postimg.cc/qB5hTShR/IMG-20250929-031551-973.jpg' alt='Exclusive member content' class="w-full content-image mb-4 rounded-lg border-2 border-platform-red" onerror="this.src='https://placehold.co/400x250/1a1a1a/CCCCCC?text=MEMBER+GALLERY'"/>
+                    <h3 class="text-xl font-bold mb-3 text-platform-cta uppercase">MEMBER-ONLY GALLERY</h3>
+                    <p class="text-platform-secondary">Exclusive snapshots only visible to private members of our community.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section id="reviews" class="py-16 px-4 md:px-8 bg-platform-red/5">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-4xl md:text-5xl font-extrabold mb-4 text-center text-platform-red uppercase">WHAT OUR MEMBERS SAY</h2>
+            <p class="text-xl text-center mb-12 text-platform-secondary">Join 1,000+ satisfied members who unlocked exclusive access</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                <!-- Review 1 -->
+                <div class="review-card p-6 rounded-lg animate-fadeIn">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-platform-cta rounded-full flex items-center justify-center text-platform-text font-bold text-lg mr-4">
+                            R
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-platform-text">Rohan M.</h4>
+                            <div class="star-rating text-lg">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="text-platform-secondary italic">
+                        "Absolutely mind-blowing content! The quality is incredible and the exclusivity makes it feel so personal. Worth every single rupee!"
+                    </p>
+                    <div class="mt-4 text-sm text-platform-cta">Joined 2 months ago</div>
+                </div>
+
+                <!-- Review 2 -->
+                <div class="review-card p-6 rounded-lg animate-fadeIn" style="animation-delay: 0.2s;">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-platform-cta rounded-full flex items-center justify-center text-platform-text font-bold text-lg mr-4">
+                            P
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-platform-text">Priya S.</h4>
+                            <div class="star-rating text-lg">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="text-platform-secondary italic">
+                        "The live shows are incredible! So intimate and real. I've never experienced anything like this before. 10/10 would recommend!"
+                    </p>
+                    <div class="mt-4 text-sm text-platform-cta">Joined 3 months ago</div>
+                </div>
+
+                <!-- Review 3 -->
+                <div class="review-card p-6 rounded-lg animate-fadeIn" style="animation-delay: 0.4s;">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-platform-cta rounded-full flex items-center justify-center text-platform-text font-bold text-lg mr-4">
+                            A
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-platform-text">Alex K.</h4>
+                            <div class="star-rating text-lg">★★★★★</div>
+                        </div>
+                    </div>
+                    <p class="text-platform-secondary italic">
+                        "The HD quality is insane! Every detail is crystal clear. This is exactly what I was looking for - premium content at an affordable price."
+                    </p>
+                    <div class="mt-4 text-sm text-platform-cta">Joined 1 month ago</div>
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <div class="bg-platform-dark p-6 rounded-lg border border-platform-red/30">
+                    <div class="text-3xl font-bold text-platform-cta mb-2">4.9/5</div>
+                    <div class="text-platform-secondary">Average Rating</div>
+                </div>
+                <div class="bg-platform-dark p-6 rounded-lg border border-platform-red/30">
+                    <div class="text-3xl font-bold text-platform-cta mb-2">1K+</div>
+                    <div class="text-platform-secondary">Active Members</div>
+                </div>
+                <div class="bg-platform-dark p-6 rounded-lg border border-platform-red/30">
+                    <div class="text-3xl font-bold text-platform-cta mb-2">99%</div>
+                    <div class="text-platform-secondary">Satisfaction Rate</div>
+                </div>
+                <div class="bg-platform-dark p-6 rounded-lg border border-platform-red/30">
+                    <div class="text-3xl font-bold text-platform-cta mb-2">24/7</div>
+                    <div class="text-platform-secondary">Support</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Actions Section -->
+    <section class="py-12 px-4 md:px-8 bg-platform-red/5">
+        <div class="max-w-4xl mx-auto text-center">
+            <h3 class="text-2xl md:text-3xl font-bold mb-8 text-platform-text">QUICK ACTIONS</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button onclick="handlePayment()" class="quick-action-btn bg-platform-red text-platform-text p-4 rounded-lg font-bold hover:bg-platform-cta">
+                    💳 Join Now
+                </button>
+                <button onclick="scrollToSection('preview')" class="quick-action-btn bg-platform-dark border-2 border-platform-red text-platform-text p-4 rounded-lg font-bold hover:bg-platform-red">
+                    👀 Preview
+                </button>
+                <button onclick="scrollToSection('reviews')" class="quick-action-btn bg-platform-dark border-2 border-platform-red text-platform-text p-4 rounded-lg font-bold hover:bg-platform-red">
+                    ⭐ Reviews
+                </button>
+                <button onclick="handlePayment()" class="quick-action-btn bg-platform-red text-platform-text p-4 rounded-lg font-bold hover:bg-platform-cta">
+                    🔓 Unlock All
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Teaser Generator Section -->
+    <section id="preview" class="py-16 px-4 md:px-8 bg-platform-dark/70 border-t-2 border-platform-red">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-4xl md:text-5xl font-extrabold mb-4 text-platform-text uppercase">✨ PREVIEW THE EXPERIENCE</h2>
+            <p class="text-lg md:text-xl font-bold mb-6 text-platform-red">Enter a mood or scenario to get a personalized teaser from our private community copywriter.</p>
+            
+            <div class="flex flex-wrap justify-center gap-2 mb-6">
+                <button class="quick-action-btn bg-platform-red text-platform-text px-4 py-2 rounded hover:bg-platform-cta transition" onclick="setPrompt('Secret office encounter')">Secret Office</button>
+                <button class="quick-action-btn bg-platform-red text-platform-text px-4 py-2 rounded hover:bg-platform-cta transition" onclick="setPrompt('Late-night rendezvous')">Late Night</button>
+                <button class="quick-action-btn bg-platform-red text-platform-text px-4 py-2 rounded hover:bg-platform-cta transition" onclick="setPrompt('Forbidden meeting')">Forbidden</button>
+                <button class="quick-action-btn bg-platform-red text-platform-text px-4 py-2 rounded hover:bg-platform-cta transition" onclick="setPrompt('Private camera session')">Private Session</button>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                <input type="text" id="teaser-prompt" placeholder="Describe your fantasy scenario..." class="flex-grow p-4 bg-platform-dark text-platform-text border border-platform-red rounded-lg focus:outline-none focus:ring-2 focus:ring-platform-cta" maxlength="100">
+                <button id="teaser-button" onclick="generateTeaser()" class="px-8 py-4 bg-platform-red text-platform-text font-bold uppercase rounded-lg transition-colors hover:bg-platform-cta quick-action-btn">
+                    ✨ Generate Teaser
+                </button>
+            </div>
+
+            <div id="teaser-result" class="min-h-[6rem] p-6 bg-platform-dark/50 rounded-lg border border-platform-red/30 text-left">
+                <p class="text-platform-secondary">Your personalized teaser will appear here...</p>
+            </div>
+            
+            <p class="mt-6 text-sm text-platform-secondary">Join 1,000+ satisfied members in our exclusive private community!</p>
+        </div>
+    </section>
+
+    <!-- Final CTA Section -->
+    <section id="subscribe-section" class="py-16 px-4 md:px-8 bg-platform-red/10 border-t-4 border-platform-red">
+        <div class="max-w-4xl mx-auto text-center p-8 md:p-12 rounded-lg bg-platform-dark/70 border border-platform-red shadow-2xl">
+            <h2 class="text-4xl md:text-5xl font-black mb-4 text-platform-text uppercase">YOUR PRIVATE ACCESS AWAITS</h2>
+            <p class="text-2xl mb-8 font-bold text-platform-secondary">
+                Complete access for just <span class="text-platform-red">INR 199/month</span>
+            </p>
+            
+            <div class="mb-8 text-left max-w-md mx-auto">
+                <div class="flex items-center mb-3">
+                    <span class="text-platform-cta mr-3">✓</span>
+                    <span>Full HD Exclusive Content</span>
+                </div>
+                <div class="flex items-center mb-3">
+                    <span class="text-platform-cta mr-3">✓</span>
+                    <span>24/7 Private Access</span>
+                </div>
+                <div class="flex items-center mb-3">
+                    <span class="text-platform-cta mr-3">✓</span>
+                    <span>Live Interactive Shows</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-platform-cta mr-3">✓</span>
+                    <span>Member-Only Community</span>
+                </div>
+            </div>
+            
+            <button onclick="handlePayment()" class="inline-block w-full sm:w-2/3 px-10 py-5 text-2xl font-black uppercase rounded-lg bg-platform-cta text-platform-text shadow-2xl transition-all duration-300 transform hover:scale-105 hover:bg-platform-red hover:shadow-[0_0_60px_rgba(255,69,0,0.9)] focus:outline-none focus:ring-4 focus:ring-platform-cta focus:ring-opacity-80 quick-action-btn">
+                <span class="animate-flash">ACTIVATE FULL ACCESS NOW</span>
+            </button>
+            
+            <p class="mt-6 text-sm text-platform-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1 text-platform-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-4-4H8a4 4 0 00-4 4v3" />
+                </svg>
+                100% Secure & Private Transaction
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-platform-secondary text-sm border-t border-platform-red/30">
+        <div class="max-w-7xl mx-auto px-4">
+            <p class="mb-2">You must be 18 years or older to subscribe. All content is private and exclusive to members only.</p>
+            <p>&copy; 2024 The Ultimate Access. All rights reserved. | <a href="#" class="text-platform-cta hover:underline">Privacy Policy</a> | <a href="#" class="text-platform-cta hover:underline">Terms of Service</a></p>
+        </div>
+    </footer>
+
+    <!-- Floating CTA Button -->
+    <div class="floating-cta">
+        <button onclick="handlePayment()" class="bg-platform-cta text-platform-text px-6 py-4 font-bold uppercase rounded-full shadow-2xl transition-all hover:bg-platform-red hover:scale-110 quick-action-btn">
+            🔥 JOIN NOW
+        </button>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="modal-overlay">
+        <div class="modal-content text-center">
+            <button onclick="closePaymentModal()" class="absolute top-4 right-4 text-platform-secondary hover:text-platform-text">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            
+            <h3 class="text-3xl font-black mb-4 text-platform-red uppercase">COMPLETE YOUR ACCESS</h3>
+            <p class="text-platform-secondary mb-6">
+                Choose your preferred payment method for 
+                <span class="text-platform-cta font-bold">INR 199/month</span>
+            </p>
+
+            <div class="flex flex-col gap-4 mb-6">
+                <button class="px-6 py-4 bg-platform-red text-platform-text font-bold rounded-lg hover:bg-platform-cta transition-all quick-action-btn" onclick="showQR()">
+                    📱 Scan QR Code
+                </button>
+                <button class="px-6 py-4 bg-platform-red text-platform-text font-bold rounded-lg hover:bg-platform-cta transition-all quick-action-btn" onclick="directUPI()">
+                    💰 Direct UPI Payment
+                </button>
+            </div>
+            
+            <div id="qr-container" class="mt-6 hidden animate-fadeIn">
+                <div class="qr-code mx-auto">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=upi://pay?pa=anisoni442000-3@okhdfcbank&pn=Anmol&am=199&cu=INR" alt="Scan to Pay" class="w-full h-full">
+                </div>
+                <p class="text-platform-secondary mt-4 text-sm">Scan with any UPI app to complete payment</p>
+            </div>
+
+            <div class="mt-6 p-4 bg-platform-dark/50 rounded-lg border border-platform-red/30">
+                <p class="text-sm text-platform-red font-bold mb-2">⚠️ IMPORTANT</p>
+                <p class="text-xs text-platform-secondary">
+                    After payment, screenshot your receipt and DM it to 
+                    <span class="text-platform-cta">@THENAUGHTYNASTYA</span> on Instagram for instant access.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Payment Functions
+        function handlePayment() {
+            document.getElementById('payment-modal').classList.add('open');
+            document.body.classList.add('modal-open');
+        }
+
+        function closePaymentModal() {
+            document.getElementById('payment-modal').classList.remove('open');
+            document.body.classList.remove('modal-open');
+            document.getElementById('qr-container').classList.add('hidden');
+        }
+
+        function showQR() {
+            document.getElementById('qr-container').classList.remove('hidden');
+        }
+
+        function directUPI() {
+            window.open('upi://pay?pa=anisoni442000-3@okhdfcbank&pn=Anmol&am=199&cu=INR', '_blank');
+        }
+
+        // Teaser Functions
+        function setPrompt(text) {
+            document.getElementById('teaser-prompt').value = text;
+            generateTeaser();
+        }
+
+        function generateTeaser() {
+            const prompt = document.getElementById('teaser-prompt').value;
+            const result = document.getElementById('teaser-result');
+            const button = document.getElementById('teaser-button');
+            
+            if (prompt.trim() === '') {
+                result.innerHTML = '<p class="text-platform-red">Please enter a scenario to generate a teaser.</p>';
+                return;
+            }
+
+            // Show loading state
+            button.disabled = true;
+            button.innerHTML = '⏳ Generating...';
+            result.innerHTML = '<p class="text-platform-cta animate-pulse">Creating your exclusive teaser...</p>';
+
+            // Simulate API call with timeout
+            setTimeout(() => {
+                const teasers = {
+                    'Secret office encounter': "The way your skirt brushes against the desk as you lean forward, your eyes holding a promise that says this meeting is anything but professional. My fingers trace the edge of the conference table, imagining the warmth of your skin beneath that crisp white blouse. This is the kind of office romance they write warnings about.",
+                    'Late-night rendezvous': "Moonlight filters through the blinds, painting silver stripes across your bare skin as you move in the darkness. The only sounds are our whispered secrets and the rhythm we create together in this hidden sanctuary. Tonight isn't about tomorrow—it's about now, about us, about everything we can't say when the sun is watching.",
+                    'Forbidden meeting': "There's a dangerous thrill in stolen moments, in glances that linger too long across crowded rooms. Your touch feels like rebellion, each caress a secret we're keeping from the world. This connection wasn't meant to be, which makes every second together taste sweeter, more intoxicating.",
+                    'Private camera session': "The red recording light winks back at us, a silent witness to what happens when the doors are locked and the curtains drawn. You perform just for me, each movement calculated to make me forget there's a lens between us. This footage will be our secret, a digital memory of how good it feels to be completely, utterly exposed."
+                };
+
+                const defaultTeaser = "Your breath catches as our eyes meet across the dimly lit room. There's an unspoken understanding between us, a current of electricity that promises tonight will be different. Every touch feels like a secret we're creating together, a memory that will linger long after the lights come back on.";
+
+                const teaser = teasers[prompt] || defaultTeaser;
+                
+                result.innerHTML = `
+                    <div class="animate-fadeIn">
+                        <p class="text-platform-secondary italic text-lg leading-relaxed border-l-4 border-platform-red pl-4">
+                            "${teaser}"
+                        </p>
+                        <p class="text-platform-cta text-sm mt-3 font-bold">✨ This is just a preview. Join now to unlock the full experience!</p>
+                    </div>
+                `;
+                
+                button.disabled = false;
+                button.innerHTML = '✨ Generate Teaser';
+            }, 1500);
+        }
+
+        // Utility Functions
+        function scrollToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showTestimonials() {
+            scrollToSection('reviews');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('payment-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closePaymentModal();
+                }
+            });
+            
+            // Add image error handling
+            document.querySelectorAll('img').forEach(img => {
+                img.addEventListener('error', function() {
+                    console.log('Image failed to load:', this.src);
+                });
+            });
+        });
+
+        // Add scroll effect for header
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('.sticky-header');
+            if (window.scrollY > 100) {
+                header.style.backgroundColor = 'rgba(0, 0, 0, 0.98)';
+            } else {
+                header.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
+            }
+        });
+    </script>
+</body>
+</html>
